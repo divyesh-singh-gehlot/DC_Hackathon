@@ -1,0 +1,289 @@
+package main
+
+import rl "vendor:raylib"
+import "core:math"
+
+Vec2 :: struct {
+    x, y: f32,
+}
+
+Circle :: struct {
+    pos: Vec2,
+    radius: f32,
+    vel: Vec2,
+}
+
+Rect :: struct {
+    pos: Vec2,   // top-left corner
+    w, h: f32,
+    vel: Vec2,
+}
+
+circle_circle_collision :: proc(a: ^Circle, b: ^Circle) {
+    dx := b.pos.x - a.pos.x
+    dy := b.pos.y - a.pos.y
+    dist := math.sqrt(dx*dx + dy*dy)
+    overlap := (a.radius + b.radius) - dist
+
+    if overlap > 0 {
+        // Normalize direction
+        nx := dx / dist
+        ny := dy / dist
+
+        // Separate circles
+        a.pos.x -= nx * overlap/2
+        a.pos.y -= ny * overlap/2
+        b.pos.x += nx * overlap/2
+        b.pos.y += ny * overlap/2
+
+        // Simple velocity reflection
+        a.vel.x *= -0.8
+        a.vel.y *= -0.8
+        b.vel.x *= -0.8
+        b.vel.y *= -0.8
+    }
+}
+
+
+rect_rect_collision :: proc(a: ^Rect, b: ^Rect) {
+    overlapX := math.min(a.pos.x+a.w, b.pos.x+b.w) - math.max(a.pos.x, b.pos.x)
+    overlapY := math.min(a.pos.y+a.h, b.pos.y+b.h) - math.max(a.pos.y, b.pos.y)
+
+    if overlapX > 0 && overlapY > 0 {
+        if overlapX < overlapY {
+            if a.pos.x < b.pos.x {
+                a.pos.x -= overlapX/2
+                b.pos.x += overlapX/2
+            } else {
+                a.pos.x += overlapX/2
+                b.pos.x -= overlapX/2
+            }
+        } else {
+            if a.pos.y < b.pos.y {
+                a.pos.y -= overlapY/2
+                b.pos.y += overlapY/2
+            } else {
+                a.pos.y += overlapY/2
+                b.pos.y -= overlapY/2
+            }
+        }
+
+        a.vel.x *= -0.8
+        a.vel.y *= -0.8
+        b.vel.x *= -0.8
+        b.vel.y *= -0.8
+    }
+}
+
+
+circle_rect_collision :: proc(c: ^Circle, r: ^Rect) {
+    closestX := math.clamp(c.pos.x, r.pos.x, r.pos.x + r.w)
+    closestY := math.clamp(c.pos.y, r.pos.y, r.pos.y + r.h)
+
+    dx := c.pos.x - closestX
+    dy := c.pos.y - closestY
+    dist2 := dx*dx + dy*dy
+
+    if dist2 < c.radius*c.radius {
+        dist := math.sqrt(dist2)
+        if dist == 0 { dist = 0.001 } // avoid div0
+
+        overlap := c.radius - dist
+
+        // Normalize
+        nx := dx / dist
+        ny := dy / dist
+
+        // Push circle out
+        c.pos.x += nx * overlap
+        c.pos.y += ny * overlap
+
+        // Reflect velocity
+        c.vel.x *= -0.8
+        c.vel.y *= -0.8
+
+        // React rectangle a bit too
+        r.vel.x *= -0.8
+        r.vel.y *= -0.8
+    }
+}
+
+
+random_velocity :: proc() -> Vec2 {
+    return Vec2{
+        x = (random_f32() - 0.5) * 600.0,       // -300..+300
+        y = -(200.0 + random_f32() * 400.0),    // -200..-600
+    }
+}
+
+rng_state: u64 = 88172645463325252
+
+random_f32 :: proc() -> f32 {
+    rng_state = rng_state * 6364136223846793005 + 1
+    return f32((rng_state >> 32) & 0xFFFFFFFF) / 4294967295.0
+}
+
+main :: proc() {
+    rl.InitWindow(1280, 720, "Physics Engine Demo")
+    rl.SetTargetFPS(60)
+
+    gravity: f32 = 800.0
+
+    // 3 circles
+    circles := []Circle{
+    Circle{pos = Vec2{250, 20}, radius = 30, vel = Vec2{0, 0}},
+    Circle{pos = Vec2{250, 120},  radius = 40, vel = Vec2{0, 0}},
+    Circle{pos = Vec2{550, 120}, radius = 25, vel = Vec2{0, 0}},
+}
+
+
+    // 2 rectangles
+    rects := []Rect{
+    Rect{pos = Vec2{700, 100}, w = 100, h = 50, vel = Vec2{0, 0}},
+    Rect{pos = Vec2{850, 120}, w = 80, h = 80, vel = Vec2{0, 0}},
+}
+
+
+    dragging_circle: ^Circle = nil
+    dragging_rect: ^Rect = nil
+    offset: Vec2
+
+    mouse_pos := Vec2{ x = f32(rl.GetMouseX()), y = f32(rl.GetMouseY()) }
+mouse_down := rl.IsMouseButtonDown(cast(rl.MouseButton)0)
+mouse_pressed := rl.IsMouseButtonPressed(cast(rl.MouseButton)0)
+mouse_released := rl.IsMouseButtonReleased(cast(rl.MouseButton)0)
+
+// --- Handle drag start ---
+if mouse_pressed {
+    // Check circles first
+    for i in 0..<len(circles) {
+        c := &circles[i]
+        dx := mouse_pos.x - c.pos.x
+        dy := mouse_pos.y - c.pos.y
+        if dx*dx + dy*dy <= c.radius*c.radius {
+            dragging_circle = c
+            offset = Vec2{ dx, dy }
+            break
+        }
+    }
+    // If no circle picked, check rectangles
+    if dragging_circle == nil {
+        for i in 0..<len(rects) {
+            r := &rects[i]
+            if mouse_pos.x >= r.pos.x && mouse_pos.x <= r.pos.x+r.w &&
+               mouse_pos.y >= r.pos.y && mouse_pos.y <= r.pos.y+r.h {
+                dragging_rect = r
+                offset = Vec2{ mouse_pos.x - r.pos.x, mouse_pos.y - r.pos.y }
+                break
+            }
+        }
+    }
+}
+
+// --- Update position while dragging ---
+if mouse_down {
+    if dragging_circle != nil {
+        dragging_circle.pos.x = mouse_pos.x - offset.x
+        dragging_circle.pos.y = mouse_pos.y - offset.y
+        dragging_circle.vel = Vec2{0,0}  // stop motion while dragging
+    }
+    if dragging_rect != nil {
+        dragging_rect.pos.x = mouse_pos.x - offset.x
+        dragging_rect.pos.y = mouse_pos.y - offset.y
+        dragging_rect.vel = Vec2{0,0}
+    }
+}
+
+// --- Release drag ---
+if mouse_released {
+    dragging_circle = nil
+    dragging_rect = nil
+}
+
+    for !rl.WindowShouldClose() {
+        dt := rl.GetFrameTime()
+
+        // --- Update circles ---
+        for i in 0..<len(circles) {
+            c := &circles[i]
+
+            c.vel.y += gravity * dt
+            c.pos.y += c.vel.y * dt
+            c.pos.x += c.vel.x * dt
+
+            if c.pos.y + c.radius > 720 {
+    c.pos.y = 720 - c.radius
+    c.vel.y *= -0.7
+    // Add small horizontal movement if almost zero
+    if math.abs(c.vel.x) < 1 {
+        c.vel.x += (random_f32() - 0.5) * 200.0  // -100..+100
+    }
+}
+
+        }
+
+        // --- Update rects ---
+        for i in 0..<len(rects) {
+            r := &rects[i]
+
+            r.vel.y += gravity * dt
+            r.pos.y += r.vel.y * dt
+            r.pos.x += r.vel.x * dt
+
+            if r.pos.y + r.h > 720 {
+    r.pos.y = 720 - r.h
+    r.vel.y *= -0.7
+    // Add small horizontal movement if almost zero
+    if math.abs(r.vel.x) < 1 {
+        r.vel.x += (random_f32() - 0.5) * 200.0
+    }
+}
+
+        }
+
+        // --- Collisions ---
+
+// Circle-Circle collisions
+for i in 0..<len(circles) {
+    for j in i+1..<len(circles) {
+        circle_circle_collision(&circles[i], &circles[j])
+    }
+}
+
+// Rect-Rect collisions
+for i in 0..<len(rects) {
+    for j in i+1..<len(rects) {
+        rect_rect_collision(&rects[i], &rects[j]) // fixed typo
+    }
+}
+
+// Circle-Rect collisions
+for i in 0..<len(circles) {
+    for j in 0..<len(rects) {
+        circle_rect_collision(&circles[i], &rects[j])
+    }
+}
+
+        // --- Draw ---
+        rl.BeginDrawing()
+        rl.ClearBackground(rl.RAYWHITE)
+
+        for c in circles {
+            rl.DrawCircle(cast(i32)c.pos.x, cast(i32)c.pos.y, c.radius, rl.RED)
+        }
+
+        for r in rects {
+            rl.DrawRectangle(
+                cast(i32)r.pos.x,
+                cast(i32)r.pos.y,
+                cast(i32)r.w,
+                cast(i32)r.h,
+                rl.BLUE,
+            )
+        }
+
+        rl.EndDrawing()
+    }
+
+    rl.CloseWindow()
+}
