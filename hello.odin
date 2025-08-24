@@ -144,63 +144,24 @@ main :: proc() {
 }
 
 
-    dragging_circle: ^Circle = nil
-    dragging_rect: ^Rect = nil
-    offset: Vec2
+dragging_circle: i32 = -1
+dragging_rect: i32 = -1
+drag_offset: Vec2 = Vec2{0, 0}      // Offset between mouse pos and object center
 
-            // --- Mouse Input & Dragging ---
-        mouse_pos := Vec2{ x = f32(rl.GetMouseX()), y = f32(rl.GetMouseY()) }
-        mouse_down := rl.IsMouseButtonDown(cast(rl.MouseButton)0)
-        mouse_pressed := rl.IsMouseButtonPressed(cast(rl.MouseButton)0)
-        mouse_released := rl.IsMouseButtonReleased(cast(rl.MouseButton)0)
+point_in_circle :: proc(px: f32, py: f32, c: Circle) -> bool {
+    dx := px - c.pos.x
+    dy := py - c.pos.y
+    return (dx*dx + dy*dy) <= c.radius * c.radius
+}
 
-        // --- Handle drag start ---
-        if mouse_pressed {
-            // Check circles first
-            for i in 0..<len(circles) {
-                c := &circles[i]
-                dx := mouse_pos.x - c.pos.x
-                dy := mouse_pos.y - c.pos.y
-                if dx*dx + dy*dy <= c.radius*c.radius {
-                    dragging_circle = c
-                    offset = Vec2{ dx, dy }
-                    break
-                }
-            }
-            // If no circle picked, check rectangles
-            if dragging_circle == nil {
-                for i in 0..<len(rects) {
-                    r := &rects[i]
-                    if mouse_pos.x >= r.pos.x && mouse_pos.x <= r.pos.x+r.w &&
-                       mouse_pos.y >= r.pos.y && mouse_pos.y <= r.pos.y+r.h {
-                        dragging_rect = r
-                        offset = Vec2{ mouse_pos.x - r.pos.x, mouse_pos.y - r.pos.y }
-                        break
-                    }
-                }
-            }
-        }
+point_in_rect :: proc(px: f32, py: f32, r: Rect) -> bool {
+    return px >= r.pos.x && px <= r.pos.x + r.w &&
+           py >= r.pos.y && py <= r.pos.y + r.h
+}
 
-        // --- Update position while dragging ---
-        if mouse_down {
-            if dragging_circle != nil {
-                dragging_circle.pos.x = mouse_pos.x - offset.x
-                dragging_circle.pos.y = mouse_pos.y - offset.y
-                dragging_circle.vel = Vec2{0,0}  // stop motion while dragging
-            }
-            if dragging_rect != nil {
-                dragging_rect.pos.x = mouse_pos.x - offset.x
-                dragging_rect.pos.y = mouse_pos.y - offset.y
-                dragging_rect.vel = Vec2{0,0}
-            }
-        }
 
-        // --- Release drag ---
-        if mouse_released {
-            dragging_circle = nil
-            dragging_rect = nil
-        }
 
+      
 
     for !rl.WindowShouldClose() {
         dt := rl.GetFrameTime()
@@ -260,6 +221,54 @@ for i in 0..<len(circles) {
     for j in 0..<len(rects) {
         circle_rect_collision(&circles[i], &rects[j])
     }
+}
+
+mx := rl.GetMouseX()
+my := rl.GetMouseY()
+
+if rl.IsMouseButtonPressed(.LEFT) {
+    // Try to pick circle
+    for i in 0..<len(circles) {
+        if point_in_circle(f32(mx), f32(my), circles[i]) {
+            dragging_circle = cast(i32) i
+            drag_offset = Vec2{
+                x = f32(mx) - circles[i].pos.x,
+                y = f32(my) - circles[i].pos.y,
+            }
+            circles[i].vel = Vec2{0,0} // Cancel velocity while dragging
+            break
+        }
+    }
+    // Try to pick rect
+    for i in 0..<len(rects) {
+        if point_in_rect(f32(mx), f32(my), rects[i]) {
+            dragging_rect = cast(i32) i
+            drag_offset = Vec2{
+                x = f32(mx) - rects[i].pos.x,
+                y = f32(my) - rects[i].pos.y,
+            }
+            rects[i].vel = Vec2{0,0}
+            break
+        }
+    }
+}
+
+if rl.IsMouseButtonDown(.LEFT) {
+    if dragging_circle != -1 {
+        circles[dragging_circle].pos.x = f32(mx) - drag_offset.x
+        circles[dragging_circle].pos.y = f32(my) - drag_offset.y
+        circles[dragging_circle].vel = Vec2{0,0}
+    }
+    if dragging_rect != -1 {
+        rects[dragging_rect].pos.x = f32(mx) - drag_offset.x
+        rects[dragging_rect].pos.y = f32(my) - drag_offset.y
+        rects[dragging_rect].vel = Vec2{0,0}
+    }
+}
+
+if rl.IsMouseButtonReleased(.LEFT) {
+    dragging_circle = -1
+    dragging_rect = -1
 }
 
         // --- Draw ---
