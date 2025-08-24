@@ -319,10 +319,11 @@ if rl.IsMouseButtonReleased(.LEFT) {
 
         // --- Draw ---
         rl.BeginDrawing()
-        rl.ClearBackground(rl.RAYWHITE)
+        rl.ClearBackground(rl.Color{ 40, 10, 62, 255 })
 
         for c in circles {
-            rl.DrawCircle(cast(i32)c.pos.x, cast(i32)c.pos.y, c.radius, rl.RED)
+            rl.DrawCircle(cast(i32)c.pos.x, cast(i32)c.pos.y, c.radius,  rl.Color{247, 141, 96, 255})
+            rl.DrawCircleLines(cast(i32)c.pos.x, cast(i32)c.pos.y, c.radius, rl.Color{221, 218, 208, 255})
         }
 
         for r in rects {
@@ -331,7 +332,15 @@ if rl.IsMouseButtonReleased(.LEFT) {
                 cast(i32)r.pos.y,
                 cast(i32)r.w,
                 cast(i32)r.h,
-                rl.BLUE,
+                rl.Color{234, 34, 100, 255},
+            )
+
+            rl.DrawRectangleLines(
+                cast(i32)r.pos.x,
+                cast(i32)r.pos.y,
+                cast(i32)r.w,
+                cast(i32)r.h,
+                rl.WHITE,
             )
         }
 
