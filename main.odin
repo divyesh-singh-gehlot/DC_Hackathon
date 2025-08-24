@@ -192,16 +192,17 @@ main :: proc() {
 
     // 3 circles
     circles := []Circle{
-    Circle{pos = Vec2{250, 20}, radius = 30, vel = Vec2{0, 0}},
-    Circle{pos = Vec2{250, 120},  radius = 40, vel = Vec2{0, 0}},
-    Circle{pos = Vec2{550, 120}, radius = 25, vel = Vec2{0, 0}},
+    Circle{pos = Vec2{390, 20}, radius = 30, vel = Vec2{0, 0}},
+    Circle{pos = Vec2{430, 120},  radius = 40, vel = Vec2{0, 0}},
+    Circle{pos = Vec2{460, 120}, radius = 25, vel = Vec2{0, 0}},
 }
 
 
     // 2 rectangles
     rects := []Rect{
-    Rect{pos = Vec2{700, 100}, w = 100, h = 50, vel = Vec2{0, 0}},
-    Rect{pos = Vec2{850, 120}, w = 80, h = 80, vel = Vec2{0, 0}},
+    Rect{pos = Vec2{490, 100}, w = 100, h = 50, vel = Vec2{0, 0}},
+    Rect{pos = Vec2{620, 120}, w = 80, h = 80, vel = Vec2{0, 0}},
+    Rect{pos = Vec2{950, 120}, w = 80, h = 40, vel = Vec2{0, 0}},
 }
 
 
