@@ -148,57 +148,59 @@ main :: proc() {
     dragging_rect: ^Rect = nil
     offset: Vec2
 
-    mouse_pos := Vec2{ x = f32(rl.GetMouseX()), y = f32(rl.GetMouseY()) }
-mouse_down := rl.IsMouseButtonDown(cast(rl.MouseButton)0)
-mouse_pressed := rl.IsMouseButtonPressed(cast(rl.MouseButton)0)
-mouse_released := rl.IsMouseButtonReleased(cast(rl.MouseButton)0)
+            // --- Mouse Input & Dragging ---
+        mouse_pos := Vec2{ x = f32(rl.GetMouseX()), y = f32(rl.GetMouseY()) }
+        mouse_down := rl.IsMouseButtonDown(cast(rl.MouseButton)0)
+        mouse_pressed := rl.IsMouseButtonPressed(cast(rl.MouseButton)0)
+        mouse_released := rl.IsMouseButtonReleased(cast(rl.MouseButton)0)
 
-// --- Handle drag start ---
-if mouse_pressed {
-    // Check circles first
-    for i in 0..<len(circles) {
-        c := &circles[i]
-        dx := mouse_pos.x - c.pos.x
-        dy := mouse_pos.y - c.pos.y
-        if dx*dx + dy*dy <= c.radius*c.radius {
-            dragging_circle = c
-            offset = Vec2{ dx, dy }
-            break
-        }
-    }
-    // If no circle picked, check rectangles
-    if dragging_circle == nil {
-        for i in 0..<len(rects) {
-            r := &rects[i]
-            if mouse_pos.x >= r.pos.x && mouse_pos.x <= r.pos.x+r.w &&
-               mouse_pos.y >= r.pos.y && mouse_pos.y <= r.pos.y+r.h {
-                dragging_rect = r
-                offset = Vec2{ mouse_pos.x - r.pos.x, mouse_pos.y - r.pos.y }
-                break
+        // --- Handle drag start ---
+        if mouse_pressed {
+            // Check circles first
+            for i in 0..<len(circles) {
+                c := &circles[i]
+                dx := mouse_pos.x - c.pos.x
+                dy := mouse_pos.y - c.pos.y
+                if dx*dx + dy*dy <= c.radius*c.radius {
+                    dragging_circle = c
+                    offset = Vec2{ dx, dy }
+                    break
+                }
+            }
+            // If no circle picked, check rectangles
+            if dragging_circle == nil {
+                for i in 0..<len(rects) {
+                    r := &rects[i]
+                    if mouse_pos.x >= r.pos.x && mouse_pos.x <= r.pos.x+r.w &&
+                       mouse_pos.y >= r.pos.y && mouse_pos.y <= r.pos.y+r.h {
+                        dragging_rect = r
+                        offset = Vec2{ mouse_pos.x - r.pos.x, mouse_pos.y - r.pos.y }
+                        break
+                    }
+                }
             }
         }
-    }
-}
 
-// --- Update position while dragging ---
-if mouse_down {
-    if dragging_circle != nil {
-        dragging_circle.pos.x = mouse_pos.x - offset.x
-        dragging_circle.pos.y = mouse_pos.y - offset.y
-        dragging_circle.vel = Vec2{0,0}  // stop motion while dragging
-    }
-    if dragging_rect != nil {
-        dragging_rect.pos.x = mouse_pos.x - offset.x
-        dragging_rect.pos.y = mouse_pos.y - offset.y
-        dragging_rect.vel = Vec2{0,0}
-    }
-}
+        // --- Update position while dragging ---
+        if mouse_down {
+            if dragging_circle != nil {
+                dragging_circle.pos.x = mouse_pos.x - offset.x
+                dragging_circle.pos.y = mouse_pos.y - offset.y
+                dragging_circle.vel = Vec2{0,0}  // stop motion while dragging
+            }
+            if dragging_rect != nil {
+                dragging_rect.pos.x = mouse_pos.x - offset.x
+                dragging_rect.pos.y = mouse_pos.y - offset.y
+                dragging_rect.vel = Vec2{0,0}
+            }
+        }
 
-// --- Release drag ---
-if mouse_released {
-    dragging_circle = nil
-    dragging_rect = nil
-}
+        // --- Release drag ---
+        if mouse_released {
+            dragging_circle = nil
+            dragging_rect = nil
+        }
+
 
     for !rl.WindowShouldClose() {
         dt := rl.GetFrameTime()
@@ -212,12 +214,8 @@ if mouse_released {
             c.pos.x += c.vel.x * dt
 
             if c.pos.y + c.radius > 720 {
-    c.pos.y = 720 - c.radius
-    c.vel.y *= -0.7
-    // Add small horizontal movement if almost zero
-    if math.abs(c.vel.x) < 1 {
-        c.vel.x += (random_f32() - 0.5) * 200.0  // -100..+100
-    }
+            c.pos.y = 720 - c.radius
+            c.vel.y *= -0.7
 }
 
         }
@@ -234,9 +232,9 @@ if mouse_released {
     r.pos.y = 720 - r.h
     r.vel.y *= -0.7
     // Add small horizontal movement if almost zero
-    if math.abs(r.vel.x) < 1 {
-        r.vel.x += (random_f32() - 0.5) * 200.0
-    }
+    //if math.abs(r.vel.x) < 1 {
+    //   r.vel.x += (random_f32() - 0.5) * 200.0
+    //}
 }
 
         }
