@@ -170,6 +170,8 @@ check_boundaries_rect :: proc(r: ^Rect, w: f32, h: f32) {
     if math.abs(r.vel.y) < stop_threshold { r.vel.y = 0 }
 }
 
+
+
 random_velocity :: proc() -> Vec2 {
     return Vec2{
         x = (random_f32() - 0.5) * 600.0,       // -300..+300
@@ -194,7 +196,7 @@ main :: proc() {
     circles := []Circle{
     Circle{pos = Vec2{250, 20}, radius = 30, vel = Vec2{0, 0}},
     Circle{pos = Vec2{250, 120},  radius = 40, vel = Vec2{0, 0}},
-    Circle{pos = Vec2{550, 120}, radius = 25, vel = Vec2{0, 0}},
+    Circle{pos = Vec2{540, 20}, radius = 25, vel = Vec2{0, 0}},
 }
 
 
@@ -204,10 +206,9 @@ main :: proc() {
     Rect{pos = Vec2{850, 120}, w = 80, h = 80, vel = Vec2{0, 0}},
 }
 
-
 dragging_circle: i32 = -1
 dragging_rect: i32 = -1
-drag_offset: Vec2 = Vec2{0, 0}      // Offset between mouse pos and object center
+drag_offset: Vec2 = Vec2{0, 0}
 
 point_in_circle :: proc(px: f32, py: f32, c: Circle) -> bool {
     dx := px - c.pos.x
@@ -233,6 +234,7 @@ point_in_rect :: proc(px: f32, py: f32, r: Rect) -> bool {
             c.pos.x += c.vel.x * dt
 
             check_boundaries_circle(c, 1280, 720)
+
         }
 
         // --- Update rects ---
@@ -244,32 +246,10 @@ point_in_rect :: proc(px: f32, py: f32, r: Rect) -> bool {
             r.pos.x += r.vel.x * dt
 
             check_boundaries_rect(r, 1280, 720)
-}
 
-        // --- Collisions ---
+        }
 
-// Circle-Circle collisions
-for i in 0..<len(circles) {
-    for j in i+1..<len(circles) {
-        circle_circle_collision(&circles[i], &circles[j])
-    }
-}
-
-// Rect-Rect collisions
-for i in 0..<len(rects) {
-    for j in i+1..<len(rects) {
-        rect_rect_collision(&rects[i], &rects[j]) // fixed typo
-    }
-}
-
-// Circle-Rect collisions
-for i in 0..<len(circles) {
-    for j in 0..<len(rects) {
-        circle_rect_collision(&circles[i], &rects[j])
-    }
-}
-
-mx := rl.GetMouseX()
+        mx := rl.GetMouseX()
 my := rl.GetMouseY()
 
 if rl.IsMouseButtonPressed(.LEFT) {
@@ -315,6 +295,29 @@ if rl.IsMouseButtonDown(.LEFT) {
 if rl.IsMouseButtonReleased(.LEFT) {
     dragging_circle = -1
     dragging_rect = -1
+}
+
+        // --- Collisions ---
+
+// Circle-Circle collisions
+for i in 0..<len(circles) {
+    for j in i+1..<len(circles) {
+        circle_circle_collision(&circles[i], &circles[j])
+    }
+}
+
+// Rect-Rect collisions
+for i in 0..<len(rects) {
+    for j in i+1..<len(rects) {
+        rect_rect_collision(&rects[i], &rects[j]) // fixed typo
+    }
+}
+
+// Circle-Rect collisions
+for i in 0..<len(circles) {
+    for j in 0..<len(rects) {
+        circle_rect_collision(&circles[i], &rects[j])
+    }
 }
 
         // --- Draw ---
