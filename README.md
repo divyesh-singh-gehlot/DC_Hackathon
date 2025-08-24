@@ -7,8 +7,7 @@ This project is a simple 2D physics engine demo written in [Odin](https://odin-l
 - Circle-circle, rect-rect, and circle-rect collision detection and response
 - Gravity and boundary checks
 - Mouse dragging for both circles and rectangles (bonus feature)
-- Simple random velocity generator (not used by default)
-- Visual feedback for all objects
+- Momentum and friction
 
 ## Requirements
 
